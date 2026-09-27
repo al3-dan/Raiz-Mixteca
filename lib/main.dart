@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 
 import 'database/database_helper.dart';
+import 'pages/lotes_page.dart';
+import 'pages/productores_page.dart';
+import 'pages/productos_page.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -123,57 +126,6 @@ class _MenuButton extends StatelessWidget {
         onPressed: onPressed,
         icon: Icon(icon),
         label: Text(title, style: const TextStyle(fontSize: 17)),
-      ),
-    );
-  }
-}
-
-class ProductoresPage extends StatelessWidget {
-  const ProductoresPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Productores')),
-      body: const Center(
-        child: Text(
-          'Aquí estarán los productores',
-          style: TextStyle(fontSize: 20),
-        ),
-      ),
-    );
-  }
-}
-
-class ProductosPage extends StatelessWidget {
-  const ProductosPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Productos')),
-      body: const Center(
-        child: Text(
-          'Aquí estarán los productos',
-          style: TextStyle(fontSize: 20),
-        ),
-      ),
-    );
-  }
-}
-
-class LotesPage extends StatelessWidget {
-  const LotesPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Lotes y trazabilidad')),
-      body: const Center(
-        child: Text(
-          'Aquí estarán los lotes y la trazabilidad',
-          style: TextStyle(fontSize: 20),
-        ),
       ),
     );
   }

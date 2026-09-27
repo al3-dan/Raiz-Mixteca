@@ -19,10 +19,10 @@
 - Preparación de la bitácora del proyecto.
 
 #### Integrantes
-- Integrante 1:
-- Integrante 2:
-- Integrante 3:
-- Integrante 4:
+- Integrante 1: Diego Fidel Sosa Cruz
+- Integrante 2: Daniel Alejandro Lopez Camarillo
+- Integrante 3: Felix ANgel Garcia Garcia
+- Integrante 4: Luis Alexis Morales Jose
 
 #### Herramientas utilizadas
 - GitHub

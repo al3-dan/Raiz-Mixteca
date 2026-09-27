@@ -8,6 +8,11 @@ void main() {
   ) async {
     await tester.pumpWidget(const RaizMixtecaApp());
 
-    expect(find.text('RaízMixteca'), findsOneWidget);
+    expect(find.text('RaízMixteca'), findsNWidgets(2));
+
+    expect(
+      find.text('Productos artesanales y trazabilidad de la región Mixteca'),
+      findsOneWidget,
+    );
   });
 }

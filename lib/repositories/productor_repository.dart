@@ -1,5 +1,3 @@
-import 'package:sqflite/sqflite.dart';
-
 import '../database/database_helper.dart';
 import '../models/productor.dart';
 
@@ -9,11 +7,7 @@ class ProductorRepository {
   Future<int> insertar(Productor productor) async {
     final db = await _databaseHelper.database;
 
-    return db.insert(
-      'productores',
-      productor.toMap(),
-      conflictAlgorithm: ConflictAlgorithm.abort,
-    );
+    return db.insert('productores', productor.toMap());
   }
 
   Future<List<Productor>> obtenerTodos() async {
@@ -31,7 +25,6 @@ class ProductorRepository {
       'productores',
       where: 'id = ?',
       whereArgs: [id],
-      limit: 1,
     );
 
     if (maps.isEmpty) {
@@ -42,10 +35,6 @@ class ProductorRepository {
   }
 
   Future<int> actualizar(Productor productor) async {
-    if (productor.id == null) {
-      throw ArgumentError('El productor debe tener un id para actualizarse.');
-    }
-
     final db = await _databaseHelper.database;
 
     return db.update(

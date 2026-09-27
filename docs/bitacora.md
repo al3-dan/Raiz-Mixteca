@@ -21,7 +21,7 @@
 #### Integrantes
 - Integrante 1: Diego Fidel Sosa Cruz
 - Integrante 2: Daniel Alejandro Lopez Camarillo
-- Integrante 3: Felix ANgel Garcia Garcia
+- Integrante 3: Felix Angel Garcia Garcia
 - Integrante 4: Luis Alexis Morales Jose
 
 #### Herramientas utilizadas

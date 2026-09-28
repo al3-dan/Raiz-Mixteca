@@ -35,13 +35,16 @@
 - Visual Studio Code
 
 #### Problemas encontrados
-- 
+- El entorno de desarrollo no detectó teléfono ni emulador Android/iOS para validar el escaneo de cámara y tomar capturas reales.
 
 #### Soluciones aplicadas
-- 
+- Se ejecutaron pruebas automatizadas para validación del identificador y análisis estático para revisar el código QR.
+- Se registró por separado qué pruebas funcionales siguen pendientes para no reportar resultados manuales no ejecutados.
 
 #### Evidencias
-- 
+- Verificación automatizada: `flutter test` (3 tests aprobados) y `flutter analyze` (sin incidencias), 27/09/2026.
+- El registro por caso y las capturas pendientes se encuentran en `docs/07-pruebas.md` y `docs/evidencias/pruebas/`.
 
 #### Pendientes
-- 
+- Ejecutar P-01 a P-07 en teléfono/emulador y guardar las capturas reales en `docs/evidencias/pruebas/`.
+- Confirmar en dispositivo que el QR compartido como PNG se decodifica y que el escaneo muestra la consulta pública.

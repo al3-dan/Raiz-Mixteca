@@ -6,10 +6,12 @@ import '../models/fotografia.dart';
 import '../models/lote.dart';
 import '../models/producto.dart';
 import '../models/productor.dart';
+import '../models/proceso.dart';
 import '../repositories/fotografia_repository.dart';
 import '../repositories/lote_repository.dart';
 import '../repositories/producto_repository.dart';
 import '../repositories/productor_repository.dart';
+import '../repositories/proceso_repository.dart';
 
 class QrPublicaPage extends StatefulWidget {
   final String codigoLote;
@@ -25,10 +27,12 @@ class _QrPublicaPageState extends State<QrPublicaPage> {
   final _productoRepository = ProductoRepository();
   final _productorRepository = ProductorRepository();
   final _fotografiaRepository = FotografiaRepository();
+  final _procesoRepository = ProcesoRepository();
 
   Lote? _lote;
   Producto? _producto;
   Productor? _productor;
+  Proceso? _proceso;
   List<Fotografia> _fotografias = [];
   bool _cargando = true;
   String? _error;
@@ -64,11 +68,13 @@ class _QrPublicaPageState extends State<QrPublicaPage> {
         producto.productorId,
       );
       final fotografias = await _fotografiaRepository.obtenerPorLote(lote.id!);
+      final proceso = await _procesoRepository.obtenerPorLote(lote.id!);
 
       setState(() {
         _lote = lote;
         _producto = producto;
         _productor = productor;
+        _proceso = proceso;
         _fotografias = fotografias;
         _cargando = false;
       });
@@ -149,6 +155,31 @@ class _QrPublicaPageState extends State<QrPublicaPage> {
                   if (_producto!.descripcion != null &&
                       _producto!.descripcion!.isNotEmpty)
                     _fila('Detalles del producto', _producto!.descripcion!),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'PROCESO DE PRODUCCIÓN',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 12),
+                  _fila(
+                    'Descripción',
+                    _proceso?.descripcion ?? 'Sin información',
+                  ),
+                  _fila('Etapas', _proceso?.etapas ?? 'Sin información'),
+                  _fila(
+                    'Observaciones',
+                    _proceso?.observaciones ?? 'Sin información',
+                  ),
                 ],
               ),
             ),

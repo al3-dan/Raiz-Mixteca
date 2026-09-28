@@ -8,6 +8,7 @@ import '../repositories/producto_repository.dart';
 import '../repositories/productor_repository.dart';
 import 'fotografias_page.dart';
 import 'proceso_page.dart';
+import 'qr_generar_page.dart';
 
 class LotesPage extends StatefulWidget {
   const LotesPage({super.key});
@@ -222,15 +223,30 @@ class _LoteFormPageState extends State<LoteFormPage> {
   final _formKey = GlobalKey<FormState>();
   final _repository = LoteRepository();
 
-  final _codigoController = TextEditingController();
   final _descripcionController = TextEditingController();
 
   int? _productoSeleccionado;
   DateTime? _fechaProduccion;
+  String _codigoGenerado = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _cargarCodigoGenerado();
+  }
+
+  Future<void> _cargarCodigoGenerado() async {
+    final codigo = await _repository.generarSiguienteCodigo();
+
+    if (!mounted) return;
+
+    setState(() {
+      _codigoGenerado = codigo;
+    });
+  }
 
   @override
   void dispose() {
-    _codigoController.dispose();
     _descripcionController.dispose();
     super.dispose();
   }
@@ -269,7 +285,7 @@ class _LoteFormPageState extends State<LoteFormPage> {
 
     final lote = Lote(
       productoId: _productoSeleccionado!,
-      codigoLote: _codigoController.text.trim(),
+      codigoLote: _codigoGenerado,
       fechaProduccion:
           '${fecha.year.toString().padLeft(4, '0')}-'
           '${fecha.month.toString().padLeft(2, '0')}-'
@@ -303,21 +319,27 @@ class _LoteFormPageState extends State<LoteFormPage> {
         child: ListView(
           padding: const EdgeInsets.all(20),
           children: [
-            TextFormField(
-              controller: _codigoController,
-              textCapitalization: TextCapitalization.characters,
-              decoration: const InputDecoration(
-                labelText: 'Código de lote',
-                hintText: 'Ejemplo: RM-001',
-                border: OutlineInputBorder(),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    const Icon(Icons.qr_code_2, color: Colors.brown),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        _codigoGenerado.isEmpty
+                            ? 'Generando código del lote...'
+                            : 'Código generado: $_codigoGenerado',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return 'Ingresa el código del lote';
-                }
-
-                return null;
-              },
             ),
 
             const SizedBox(height: 16),
@@ -505,6 +527,26 @@ class LoteDetallePage extends StatelessWidget {
                       codigoLote: lote.codigoLote,
                     ),
                   ),
+                );
+              },
+            ),
+          ),
+
+          const SizedBox(height: 12),
+
+          Card(
+            child: ListTile(
+              leading: const CircleAvatar(child: Icon(Icons.qr_code_2)),
+              title: const Text(
+                'Generar QR del lote',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              subtitle: const Text('Muestra y comparte el código QR del lote.'),
+              trailing: const Icon(Icons.arrow_forward_ios),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => QrGenerarPage(lote: lote)),
                 );
               },
             ),

@@ -17,6 +17,9 @@
 - Creación de la estructura de evidencias en el repositorio.
 - Creación de las carpetas para planeación, desarrollo, pruebas y presentación.
 - Preparación de la bitácora del proyecto.
+- Implementación del flujo de códigos QR en la app: generación del identificador `LOT-000001`, validación del formato, pantalla de lectura, pantalla pública y acceso desde detalle del lote.
+- Registro de la dependencia `qr_flutter` y `mobile_scanner` en el proyecto.
+- Ajuste del flujo de creación de lotes para generar el código único automáticamente desde el último id disponible.
 
 #### Integrantes
 - Integrante 1: Diego Fidel Sosa Cruz

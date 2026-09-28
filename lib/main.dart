@@ -4,6 +4,7 @@ import 'database/database_helper.dart';
 import 'pages/lotes_page.dart';
 import 'pages/productores_page.dart';
 import 'pages/productos_page.dart';
+import 'pages/qr_escanear_page.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -37,7 +38,7 @@ class InicioPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('RaízMixteca')),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -97,6 +98,19 @@ class InicioPage extends StatelessWidget {
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (_) => const LotesPage()),
+                );
+              },
+            ),
+
+            const SizedBox(height: 15),
+
+            _MenuButton(
+              icon: Icons.camera_alt,
+              title: 'Escanear QR',
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const QrEscanearPage()),
                 );
               },
             ),

@@ -35,11 +35,12 @@
 - Visual Studio Code
 
 #### Problemas encontrados
-- El entorno de desarrollo no detectó teléfono ni emulador Android/iOS para validar el escaneo de cámara y tomar capturas reales.
+- El primer intento de pruebas fue sin teléfono conectado. En el reintento, Flutter detectó el teléfono Android 16 RMX3867, pero no pudo compilar ni instalar la app porque el NDK `28.2.13676358` está incompleto y `sdkmanager` falla con exit code `-1073740791` usando Java 25.
 
 #### Soluciones aplicadas
 - Se ejecutaron pruebas automatizadas para validación del identificador y análisis estático para revisar el código QR.
 - Se registró por separado qué pruebas funcionales siguen pendientes para no reportar resultados manuales no ejecutados.
+- Se repitió la detección del dispositivo y se intentó el arranque en Android; se localizó la instalación incompleta del NDK como bloqueo previo a las pruebas de cámara.
 
 #### Evidencias
 - Verificación automatizada: `flutter test` (3 tests aprobados) y `flutter analyze` (sin incidencias), 27/09/2026.
@@ -48,3 +49,4 @@
 #### Pendientes
 - Ejecutar P-01 a P-07 en teléfono/emulador y guardar las capturas reales en `docs/evidencias/pruebas/`.
 - Confirmar en dispositivo que el QR compartido como PNG se decodifica y que el escaneo muestra la consulta pública.
+- Reparar la instalación del NDK `28.2.13676358` y volver a compilar con una cadena Java/Android SDK compatible.

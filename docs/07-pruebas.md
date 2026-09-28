@@ -70,18 +70,18 @@ Definir el conjunto inicial de pruebas funcionales que validan el flujo completo
 
 ## 5. Registro de ejecución — 27/09/2026
 
-**Entorno disponible:** Windows 10; Flutter detectó Windows, Chrome y Edge. No se detectó teléfono Android/iOS ni emulador. Las capturas y pruebas de cámara física quedan pendientes de ejecutar en un dispositivo móvil.
+**Entorno disponible:** Windows 11; Flutter detectó Windows, Chrome, Edge y un teléfono Android 16 (RMX3867). En el primer intento no había dispositivo móvil conectado. En el reintento, el teléfono fue detectado, pero la app no llegó a compilarse/instalarse: el NDK `28.2.13676358` local solo contiene `.installer` y no tiene `source.properties`; Gradle falló al invocar `sdkmanager` (exit code `-1073740791`). Las pruebas funcionales y capturas siguen pendientes.
 
 | ID | Estado | Resultado de esta sesión | Evidencia pendiente |
 |---|---|---|---|
-| P-01 | Pendiente manual | No se ejecutó el flujo de alta en la app. | `P-01-productor.png` |
-| P-02 | Pendiente manual | No se ejecutó el flujo de alta y asociación en la app. | `P-02-producto.png` |
+| P-01 | Pendiente manual | No se ejecutó el flujo de alta en la app; la compilación Android no completó. | `P-01-productor.png` |
+| P-02 | Pendiente manual | No se ejecutó el flujo de alta y asociación en la app; la compilación Android no completó. | `P-02-producto.png` |
 | P-03 | Parcial, automatizado | El test valida el formato y extracción del identificador; no prueba `MAX(id)+1` en SQLite ni el registro desde la app. | `P-03-lote.png` |
 | P-04 | Pendiente de validación visual | La pantalla genera y comparte una imagen QR; falta decodificarla con un lector y confirmar el contenido en dispositivo. | `P-04-qr-generado.png` |
-| P-05 | Pendiente de dispositivo | El escáner requiere acceso a cámara; no se pudo probar en este entorno. | `P-05-consulta-publica.png` |
+| P-05 | Pendiente de dispositivo | El teléfono se detectó, pero la app no se instaló; no se pudo abrir el escáner ni dar acceso a la cámara. | `P-05-consulta-publica.png` |
 | P-06 | Pendiente manual | La app usa SQLite local, pero el recorrido de escaneo sin conexión no se ejecutó. | `P-06-sin-internet.png` |
-| P-07 | Pendiente de dispositivo | No se capturó una fotografía ni se comprobó su visualización pública en esta sesión. | `P-07-fotografia-publica.png` |
+| P-07 | Pendiente de dispositivo | No se instaló la app; no se capturó una fotografía ni se comprobó su visualización pública. | `P-07-fotografia-publica.png` |
 
 **Verificación automatizada ejecutada:** `flutter test` pasó (3 tests). `flutter analyze` terminó con `No issues found!`.
 
-Las evidencias visuales deben guardarse en `docs/evidencias/pruebas/` con los nombres indicados. No se agregan capturas de ejemplo como si fueran resultados reales.
+Las evidencias visuales deben guardarse en `docs/evidencias/pruebas/` con los nombres indicados. No se agregan capturas de ejemplo como si fueran resultados reales. Para reintentar en el teléfono, reparar/instalar el NDK `28.2.13676358` con una versión compatible de Java/sdmanager y volver a ejecutar `flutter run -d 99QGKJFI8P5TSO7D`.

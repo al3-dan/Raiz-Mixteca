@@ -14,7 +14,7 @@
 
 ## Pruebas funcionales
 
-P-03 tiene cobertura automatizada parcial para el formato y extracción del código; el cálculo consecutivo en SQLite requiere validación manual. P-04 está implementada, pero falta decodificar la imagen QR en un lector. P-01, P-02, P-05, P-06 y P-07 también requieren ejecución manual. El 27/09/2026 el entorno detectó Windows y navegadores, pero no un teléfono ni emulador móvil.
+P-03 tiene cobertura automatizada parcial para el formato y extracción del código; el cálculo consecutivo en SQLite requiere validación manual. P-04 está implementada, pero falta decodificar la imagen QR en un lector. P-01, P-02, P-05, P-06 y P-07 también requieren ejecución manual. El 27/09/2026 se detectó el teléfono Android 16 RMX3867, pero la app no llegó a compilarse/instalarse porque el NDK `28.2.13676358` está incompleto y `sdkmanager` terminó con error `-1073740791`.
 
 No se reportan capturas como evidencia porque todavía no se han tomado en la app real. Al ejecutar cada caso, guardar una captura en `docs/evidencias/pruebas/` con el nombre indicado en `docs/07-pruebas.md` y actualizar ahí su estado.
 

@@ -1,221 +1,153 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <title>RaízMixteca | Conectando la Mixteca</title>
-
-    <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
-        body {
-            font-family: Arial, sans-serif;
-            background: #f5f1e8;
-            color: #26352b;
-            line-height: 1.6;
-        }
-
-        header {
-            background: #23452d;
-            color: white;
-            text-align: center;
-            padding: 60px 20px;
-        }
-
-        header h1 {
-            font-size: 3rem;
-            margin-bottom: 10px;
-        }
-
-        header p {
-            font-size: 1.2rem;
-        }
-
-        section {
-            max-width: 1000px;
-            margin: auto;
-            padding: 50px 20px;
-        }
-
-        h2 {
-            color: #23452d;
-            margin-bottom: 20px;
-            font-size: 2rem;
-        }
-
-        .card-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 20px;
-        }
-
-        .card {
-            background: white;
-            padding: 25px;
-            border-radius: 15px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-        }
-
-        .card h3 {
-            margin-bottom: 10px;
-            color: #8a5a2b;
-        }
-
-        .button {
-            display: inline-block;
-            margin-top: 20px;
-            padding: 12px 25px;
-            background: #c8913d;
-            color: white;
-            text-decoration: none;
-            border-radius: 25px;
-            font-weight: bold;
-        }
-
-        footer {
-            background: #23452d;
-            color: white;
-            text-align: center;
-            padding: 30px 20px;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="RaízMixteca: trazabilidad digital para productos regionales de la Mixteca mediante productores, lotes y códigos QR." />
+  <title>RaízMixteca | Trazabilidad de productos regionales</title>
+  <link rel="stylesheet" href="css/styles.css" />
 </head>
-
 <body>
-
-<header>
-    <h1>🌱 RaízMixteca</h1>
-
-    <p>
-        Conectando productores de la Mixteca con nuevos mercados
-    </p>
-</header>
-
-<section>
-
-    <h2>¿Qué es RaízMixteca?</h2>
-
-    <p>
-        RaízMixteca es una aplicación móvil diseñada para conectar
-        productos y productores de la región Mixteca con los consumidores
-        mediante el uso de tecnología.
-    </p>
-
-</section>
-
-<section>
-
-    <h2>🎯 Nuestro objetivo</h2>
-
-    <p>
-        Dar mayor visibilidad a los productos regionales, facilitar el
-        acceso a información sobre su origen y producción, y acercar a
-        consumidores y productores.
-    </p>
-
-</section>
-
-<section>
-
-    <h2>💡 ¿Qué ofrece?</h2>
-
-    <div class="card-container">
-
-        <div class="card">
-            <h3>📱 Productos</h3>
-            <p>
-                Consulta productos regionales y conoce sus características.
-            </p>
-        </div>
-
-        <div class="card">
-            <h3>👨‍🌾 Productores</h3>
-            <p>
-                Conoce a los productores y descubre el trabajo detrás
-                de cada producto.
-            </p>
-        </div>
-
-        <div class="card">
-            <h3>📦 Lotes</h3>
-            <p>
-                Consulta información relacionada con los lotes y
-                procesos de producción.
-            </p>
-        </div>
-
-        <div class="card">
-            <h3>📸 Evidencias</h3>
-            <p>
-                Visualiza fotografías y detalles relacionados con
-                los procesos de producción.
-            </p>
-        </div>
-
-        <div class="card">
-            <h3>🔎 Código QR</h3>
-            <p>
-                Accede rápidamente a información relacionada con
-                los productos mediante códigos QR.
-            </p>
-        </div>
-
-        <div class="card">
-            <h3>💬 Conexión</h3>
-            <p>
-                Facilita el acercamiento y comunicación entre
-                consumidores y productores.
-            </p>
-        </div>
-
+  <header class="topbar">
+    <div class="container nav">
+      <a class="brand" href="#inicio">RaízMixteca</a>
+      <nav aria-label="Navegación principal">
+        <a href="#proyecto">Proyecto</a>
+        <a href="#funcionamiento">Funcionamiento</a>
+        <a href="#demo">Demo</a>
+        <a href="#tecnologia">Tecnología</a>
+      </nav>
     </div>
+  </header>
 
-</section>
+  <main>
+    <section id="inicio" class="hero">
+      <div class="container hero-grid">
+        <div>
+          <span class="badge">ExpoCiencias Oaxaca 2026</span>
+          <h1>RaízMixteca</h1>
+          <p class="lead">Tecnología para acercar al consumidor al origen de productos regionales mediante productores, lotes y códigos QR.</p>
+          <div class="actions">
+            <a class="btn primary" href="#demo">Probar demostración</a>
+            <a class="btn secondary" href="https://github.com/al3-dan/Raiz-Mixteca" target="_blank" rel="noopener">Ver proyecto en GitHub</a>
+          </div>
+        </div>
 
-<section>
+        <div class="hero-card">
+          <p class="eyebrow">Flujo principal</p>
+          <ol class="flow-list">
+            <li>Registrar productor</li>
+            <li>Registrar producto</li>
+            <li>Crear lote</li>
+            <li>Agregar proceso y fotografías</li>
+            <li>Generar código QR</li>
+            <li>Consultar la trazabilidad</li>
+          </ol>
+        </div>
+      </div>
+    </section>
 
-    <h2>🚀 Nuestro proyecto</h2>
+    <section id="proyecto" class="section">
+      <div class="container">
+        <p class="eyebrow">El proyecto</p>
+        <h2>¿Qué es RaízMixteca?</h2>
+        <p class="section-intro">RaízMixteca es una aplicación móvil orientada al registro y consulta de información de productores locales de la región Mixteca. El MVP contempla productores, productos, lotes, fotografías, información del proceso y consulta mediante códigos QR.</p>
 
-    <p>
-        RaízMixteca busca combinar la identidad y riqueza productiva
-        de la región Mixteca con herramientas digitales que permitan
-        acercar sus productos a más personas.
-    </p>
+        <div class="cards three">
+          <article class="card">
+            <h3>Productores</h3>
+            <p>Registro de información básica del productor y relación con sus productos.</p>
+          </article>
+          <article class="card">
+            <h3>Productos y lotes</h3>
+            <p>Organización de productos regionales y lotes con identificadores únicos.</p>
+          </article>
+          <article class="card">
+            <h3>Consumidores</h3>
+            <p>Consulta de información pública sobre origen, proceso y lote mediante QR.</p>
+          </article>
+        </div>
+      </div>
+    </section>
 
-    <a
-        class="button"
-        href="https://github.com/al3-dan/Raiz-Mixteca"
-        target="_blank">
-        Ver proyecto en GitHub
-    </a>
+    <section id="funcionamiento" class="section alt">
+      <div class="container">
+        <p class="eyebrow">Trazabilidad</p>
+        <h2>¿Cómo funciona?</h2>
+        <div class="steps">
+          <div class="step"><span>1</span><div><strong>Registro del productor</strong><p>Se capturan los datos necesarios para identificar al productor.</p></div></div>
+          <div class="step"><span>2</span><div><strong>Registro del producto</strong><p>El producto queda asociado al productor correspondiente.</p></div></div>
+          <div class="step"><span>3</span><div><strong>Creación del lote</strong><p>Cada lote utiliza un código único, por ejemplo <code>LOT-000001</code>.</p></div></div>
+          <div class="step"><span>4</span><div><strong>Proceso y evidencias</strong><p>Se agregan datos del proceso y fotografías autorizadas.</p></div></div>
+          <div class="step"><span>5</span><div><strong>Generación y lectura del QR</strong><p>El código QR permite localizar el lote y mostrar su información pública.</p></div></div>
+        </div>
+      </div>
+    </section>
 
-</section>
+    <section id="demo" class="section">
+      <div class="container">
+        <p class="eyebrow">Demostración</p>
+        <h2>Consulta un lote de ejemplo</h2>
+        <p class="section-intro">Esta sección simula la información que un consumidor podría consultar al escanear el QR de un producto.</p>
 
-<section>
+        <div class="demo-controls">
+          <label for="lotSelect">Selecciona un lote</label>
+          <select id="lotSelect" aria-label="Seleccionar lote"></select>
+        </div>
 
-    <h2>👥 Equipo</h2>
+        <article id="lotCard" class="lot-card" aria-live="polite">
+          <div>
+            <span class="lot-label">Código de lote</span>
+            <h3 id="lotCode">Cargando...</h3>
+          </div>
+          <dl>
+            <div><dt>Producto</dt><dd id="lotProduct">—</dd></div>
+            <div><dt>Tipo</dt><dd id="lotType">—</dd></div>
+            <div><dt>Productor</dt><dd id="lotProducer">—</dd></div>
+            <div><dt>Comunidad</dt><dd id="lotCommunity">—</dd></div>
+            <div><dt>Fecha</dt><dd id="lotDate">—</dd></div>
+            <div><dt>Proceso</dt><dd id="lotProcess">—</dd></div>
+          </dl>
+        </article>
+      </div>
+    </section>
 
-    <p>
-        Proyecto desarrollado por estudiantes de la región Mixteca.
-    </p>
+    <section id="tecnologia" class="section alt">
+      <div class="container">
+        <p class="eyebrow">MVP</p>
+        <h2>Tecnologías</h2>
+        <div class="chips">
+          <span>Flutter</span>
+          <span>Dart</span>
+          <span>SQLite</span>
+          <span>Códigos QR</span>
+          <span>Git</span>
+          <span>GitHub</span>
+          <span>ClickUp</span>
+        </div>
+        <p class="note">Para esta versión del proyecto se prioriza el almacenamiento local. Una API REST y PostgreSQL quedan como evolución futura.</p>
+      </div>
+    </section>
 
-    <p>
-        <strong>Presentación:</strong> 2 de octubre de 2026
-    </p>
+    <section class="section">
+      <div class="container callout">
+        <div>
+          <p class="eyebrow">Código y documentación</p>
+          <h2>Consulta el repositorio</h2>
+          <p>El repositorio contiene documentación, requisitos, pruebas y avances técnicos del proyecto.</p>
+        </div>
+        <a class="btn primary" href="https://github.com/al3-dan/Raiz-Mixteca" target="_blank" rel="noopener">Abrir GitHub</a>
+      </div>
+    </section>
+  </main>
 
-</section>
+  <footer>
+    <div class="container footer-content">
+      <strong>RaízMixteca</strong>
+      <span>Tradición que se conecta con tecnología.</span>
+    </div>
+  </footer>
 
-<footer>
-
-    <p>🌱 RaízMixteca</p>
-    <p>Tradición que se conecta con tecnología.</p>
-
-</footer>
-
+  <script src="js/app.js"></script>
 </body>
 </html>

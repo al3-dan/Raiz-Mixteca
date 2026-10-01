@@ -7,6 +7,11 @@ class Productor {
   final String? telefono;
   final String? correo;
   final String? descripcion;
+
+  // Datos de acceso
+  final String usuario;
+  final String contrasena;
+
   final int mostrarNombre;
   final int mostrarComunidad;
   final int mostrarContacto;
@@ -21,6 +26,8 @@ class Productor {
     this.telefono,
     this.correo,
     this.descripcion,
+    required this.usuario,
+    required this.contrasena,
     this.mostrarNombre = 1,
     this.mostrarComunidad = 1,
     this.mostrarContacto = 0,
@@ -37,6 +44,8 @@ class Productor {
       telefono: map['telefono'] as String?,
       correo: map['correo'] as String?,
       descripcion: map['descripcion'] as String?,
+      usuario: map['usuario'] as String,
+      contrasena: map['contrasena'] as String,
       mostrarNombre: map['mostrar_nombre'] as int,
       mostrarComunidad: map['mostrar_comunidad'] as int,
       mostrarContacto: map['mostrar_contacto'] as int,
@@ -54,6 +63,8 @@ class Productor {
       'telefono': telefono,
       'correo': correo,
       'descripcion': descripcion,
+      'usuario': usuario,
+      'contrasena': contrasena,
       'mostrar_nombre': mostrarNombre,
       'mostrar_comunidad': mostrarComunidad,
       'mostrar_contacto': mostrarContacto,

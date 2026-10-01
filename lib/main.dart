@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'database/database_helper.dart';
-import 'pages/lotes_page.dart';
-import 'pages/productores_page.dart';
-import 'pages/productos_page.dart';
-import 'pages/qr_escanear_page.dart';
+import 'pages/main_navigation_page.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -19,128 +16,60 @@ class RaizMixtecaApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    const colorTerracota = Color(0xFFB85C38);
+    const colorCrema = Color(0xFFF5F0E7);
+    const colorCafe = Color(0xFF211B17);
+
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'RaízMixteca',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.brown),
         useMaterial3: true,
-      ),
-      home: const InicioPage(),
-    );
-  }
-}
-
-class InicioPage extends StatelessWidget {
-  const InicioPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('RaízMixteca')),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const SizedBox(height: 20),
-
-            const Icon(Icons.eco, size: 80),
-
-            const SizedBox(height: 20),
-
-            const Text(
-              'RaízMixteca',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
+        scaffoldBackgroundColor: colorCrema,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: colorTerracota,
+          brightness: Brightness.light,
+        ),
+        fontFamily: 'Roboto',
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          surfaceTintColor: Colors.transparent,
+          foregroundColor: colorCafe,
+          centerTitle: false,
+        ),
+        inputDecorationTheme: InputDecorationTheme(
+          filled: true,
+          fillColor: Colors.white,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.all(Radius.circular(16)),
+            borderSide: BorderSide.none,
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.all(Radius.circular(16)),
+            borderSide: BorderSide.none,
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.all(Radius.circular(16)),
+            borderSide: BorderSide(color: colorTerracota, width: 1.5),
+          ),
+        ),
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: colorTerracota,
+            foregroundColor: Colors.white,
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(17),
             ),
-
-            const SizedBox(height: 10),
-
-            const Text(
-              'Productos artesanales y trazabilidad de la región Mixteca',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 16),
-            ),
-
-            const SizedBox(height: 40),
-
-            _MenuButton(
-              icon: Icons.people,
-              title: 'Productores',
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const ProductoresPage()),
-                );
-              },
-            ),
-
-            const SizedBox(height: 15),
-
-            _MenuButton(
-              icon: Icons.inventory_2,
-              title: 'Productos',
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const ProductosPage()),
-                );
-              },
-            ),
-
-            const SizedBox(height: 15),
-
-            _MenuButton(
-              icon: Icons.qr_code_2,
-              title: 'Lotes y trazabilidad',
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const LotesPage()),
-                );
-              },
-            ),
-
-            const SizedBox(height: 15),
-
-            _MenuButton(
-              icon: Icons.camera_alt,
-              title: 'Escanear QR',
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const QrEscanearPage()),
-                );
-              },
-            ),
-          ],
+          ),
+        ),
+        floatingActionButtonTheme: const FloatingActionButtonThemeData(
+          backgroundColor: colorTerracota,
+          foregroundColor: Colors.white,
         ),
       ),
-    );
-  }
-}
-
-class _MenuButton extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final VoidCallback onPressed;
-
-  const _MenuButton({
-    required this.icon,
-    required this.title,
-    required this.onPressed,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 60,
-      child: ElevatedButton.icon(
-        onPressed: onPressed,
-        icon: Icon(icon),
-        label: Text(title, style: const TextStyle(fontSize: 17)),
-      ),
+      home: const MainNavigationPage(),
     );
   }
 }

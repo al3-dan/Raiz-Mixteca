@@ -11,7 +11,15 @@ import 'proceso_page.dart';
 import 'qr_generar_page.dart';
 
 class LotesPage extends StatefulWidget {
-  const LotesPage({super.key});
+  /// Si se especifica, muestra solamente los lotes relacionados
+  /// con los productos de este productor.
+  final int? productorId;
+
+  /// Identidad del productor que inició sesión.
+  /// Sirve para determinar qué acciones puede realizar.
+  final int? productorSesionId;
+
+  const LotesPage({super.key, this.productorId, this.productorSesionId});
 
   @override
   State<LotesPage> createState() => _LotesPageState();
@@ -28,6 +36,45 @@ class _LotesPageState extends State<LotesPage> {
 
   bool _cargando = true;
 
+  static const Color colorTierra = Color(0xFF6B4226);
+  static const Color colorBarro = Color(0xFFA85D3A);
+  static const Color colorVerde = Color(0xFF667C4A);
+  static const Color colorDorado = Color(0xFFD5A84B);
+  static const Color colorCrema = Color(0xFFF7F1E5);
+  static const Color colorTexto = Color(0xFF30251F);
+
+  bool get _esVisitante => widget.productorSesionId == null;
+
+  bool _esPropietario(Lote lote) {
+    if (widget.productorSesionId == null) {
+      return false;
+    }
+
+    final producto = _productos[lote.productoId];
+
+    if (producto == null) {
+      return false;
+    }
+
+    return producto.productorId == widget.productorSesionId;
+  }
+
+  bool get _puedeAgregar {
+    return widget.productorSesionId != null;
+  }
+
+  String get _tituloLista {
+    if (widget.productorId != null) {
+      return 'Mis lotes';
+    }
+
+    if (_esVisitante) {
+      return 'Lotes registrados';
+    }
+
+    return 'Lotes públicos';
+  }
+
   @override
   void initState() {
     super.initState();
@@ -35,43 +82,98 @@ class _LotesPageState extends State<LotesPage> {
   }
 
   Future<void> _cargarDatos() async {
-    final lotes = await _loteRepository.obtenerTodos();
-    final productos = await _productoRepository.obtenerTodos();
-    final productores = await _productorRepository.obtenerTodos();
+    try {
+      List<Lote> lotes;
+      List<Producto> productos;
+      List<Productor> productores;
 
-    if (!mounted) return;
+      if (widget.productorId != null) {
+        productos = await _productoRepository.obtenerPorProductor(
+          widget.productorId!,
+        );
 
-    setState(() {
-      _lotes = lotes;
+        lotes = [];
 
-      _productos = {
-        for (final producto in productos)
-          if (producto.id != null) producto.id!: producto,
-      };
+        for (final producto in productos) {
+          if (producto.id == null) continue;
 
-      _productores = {
-        for (final productor in productores)
-          if (productor.id != null) productor.id!: productor,
-      };
+          final lotesProducto = await _loteRepository.obtenerPorProducto(
+            producto.id!,
+          );
 
-      _cargando = false;
-    });
+          lotes.addAll(lotesProducto);
+        }
+
+        final productor = await _productorRepository.obtenerPorId(
+          widget.productorId!,
+        );
+
+        productores = productor == null ? [] : [productor];
+      } else {
+        lotes = await _loteRepository.obtenerTodos();
+        productos = await _productoRepository.obtenerTodos();
+        productores = await _productorRepository.obtenerTodos();
+      }
+
+      if (!mounted) return;
+
+      setState(() {
+        _lotes = lotes;
+
+        _productos = {
+          for (final producto in productos)
+            if (producto.id != null) producto.id!: producto,
+        };
+
+        _productores = {
+          for (final productor in productores)
+            if (productor.id != null) productor.id!: productor,
+        };
+
+        _cargando = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _cargando = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('No se pudieron cargar los lotes: $e'),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: colorTierra,
+        ),
+      );
+    }
   }
 
   Future<void> _mostrarFormulario() async {
-    if (_productos.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Primero debes registrar al menos un producto.'),
-        ),
+    if (!_puedeAgregar) {
+      _mostrarMensaje(
+        'Debes iniciar sesión como productor para registrar un lote.',
       );
+      return;
+    }
+
+    final productosPropios = _productos.values
+        .where(
+          (producto) =>
+              producto.productorId == widget.productorSesionId &&
+              producto.id != null,
+        )
+        .toList();
+
+    if (productosPropios.isEmpty) {
+      _mostrarMensaje('Primero debes registrar al menos un producto propio.');
       return;
     }
 
     await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => LoteFormPage(productos: _productos.values.toList()),
+        builder: (_) => LoteFormPage(productos: productosPropios),
       ),
     );
 
@@ -81,29 +183,53 @@ class _LotesPageState extends State<LotesPage> {
   }
 
   Future<void> _eliminarLote(Lote lote) async {
+    if (!_esPropietario(lote)) {
+      _mostrarMensaje('Solo puedes eliminar tus propios lotes.');
+      return;
+    }
+
     if (lote.id == null) return;
 
     final confirmar = await showDialog<bool>(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Eliminar lote'),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
+          title: const Text(
+            'Eliminar lote',
+            style: TextStyle(fontWeight: FontWeight.bold, color: colorTexto),
+          ),
           content: Text(
             '¿Deseas eliminar el lote ${lote.codigoLote}? '
-            'También se eliminarán su proceso y fotografías.',
+            'También se eliminarán los datos relacionados.',
           ),
           actions: [
             TextButton(
               onPressed: () {
                 Navigator.pop(context, false);
               },
-              child: const Text('Cancelar'),
+              child: const Text(
+                'Cancelar',
+                style: TextStyle(color: colorTierra),
+              ),
             ),
             FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: colorBarro,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
               onPressed: () {
                 Navigator.pop(context, true);
               },
-              child: const Text('Eliminar'),
+              child: const Text(
+                'Eliminar',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
             ),
           ],
         );
@@ -112,17 +238,21 @@ class _LotesPageState extends State<LotesPage> {
 
     if (!mounted || confirmar != true) return;
 
-    await _loteRepository.eliminar(lote.id!);
+    try {
+      await _loteRepository.eliminar(lote.id!);
 
-    if (!mounted) return;
+      if (!mounted) return;
 
-    await _cargarDatos();
+      await _cargarDatos();
 
-    if (!mounted) return;
+      if (!mounted) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Lote eliminado correctamente.')),
-    );
+      _mostrarMensaje('Lote eliminado correctamente.');
+    } catch (e) {
+      if (!mounted) return;
+
+      _mostrarMensaje('No se pudo eliminar el lote: $e');
+    }
   }
 
   void _abrirDetalle(Lote lote) {
@@ -133,6 +263,7 @@ class _LotesPageState extends State<LotesPage> {
           lote: lote,
           producto: _productos[lote.productoId],
           productor: _obtenerProductorDelProducto(lote.productoId),
+          puedeEditar: _esPropietario(lote),
         ),
       ),
     );
@@ -148,64 +279,532 @@ class _LotesPageState extends State<LotesPage> {
     return _productores[producto.productorId];
   }
 
+  void _mostrarMensaje(String mensaje) {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(mensaje),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: colorTierra,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Lotes y trazabilidad')),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _mostrarFormulario,
-        child: const Icon(Icons.add),
+      backgroundColor: colorCrema,
+      appBar: AppBar(
+        elevation: 0,
+        backgroundColor: colorCrema,
+        foregroundColor: colorTexto,
+        titleSpacing: 20,
+        title: const Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'RAÍZMIXTECA',
+              style: TextStyle(
+                color: colorVerde,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 2,
+              ),
+            ),
+            Text(
+              'Lotes y trazabilidad',
+              style: TextStyle(
+                color: colorTexto,
+                fontSize: 22,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ],
+        ),
       ),
-      body: _cargando
-          ? const Center(child: CircularProgressIndicator())
-          : _lotes.isEmpty
-          ? const Center(
-              child: Text(
-                'No hay lotes registrados.',
-                style: TextStyle(fontSize: 18),
+      floatingActionButton: _puedeAgregar
+          ? FloatingActionButton.extended(
+              onPressed: _mostrarFormulario,
+              backgroundColor: colorTierra,
+              foregroundColor: Colors.white,
+              elevation: 5,
+              icon: const Icon(Icons.add),
+              label: const Text(
+                'Nuevo lote',
+                style: TextStyle(fontWeight: FontWeight.bold),
               ),
             )
-          : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: _lotes.length,
-              itemBuilder: (context, index) {
-                final lote = _lotes[index];
+          : null,
+      body: _cargando
+          ? const Center(child: CircularProgressIndicator(color: colorTierra))
+          : _lotes.isEmpty
+          ? _estadoVacio()
+          : RefreshIndicator(
+              color: colorTierra,
+              onRefresh: _cargarDatos,
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(20, 10, 20, 110),
+                children: [
+                  _encabezado(),
+                  const SizedBox(height: 25),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          _tituloLista,
+                          style: const TextStyle(
+                            color: colorTexto,
+                            fontSize: 21,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Flexible(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 7,
+                          ),
+                          decoration: BoxDecoration(
+                            color: colorDorado.withOpacity(0.18),
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                          child: Text(
+                            '${_lotes.length} registrados',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: colorTierra,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  ..._lotes.map(_tarjetaLote),
+                ],
+              ),
+            ),
+    );
+  }
 
-                final producto = _productos[lote.productoId];
+  Widget _encabezado() {
+    return Container(
+      padding: const EdgeInsets.all(23),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [colorTierra, colorBarro],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: [
+          BoxShadow(
+            color: colorTierra.withOpacity(0.20),
+            blurRadius: 20,
+            offset: const Offset(0, 9),
+          ),
+        ],
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            right: -35,
+            top: -35,
+            child: Container(
+              width: 135,
+              height: 135,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.10),
+                  width: 20,
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            right: 30,
+            bottom: -55,
+            child: Container(
+              width: 90,
+              height: 90,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.08),
+                  width: 15,
+                ),
+              ),
+            ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 50,
+                height: 50,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.16),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: const Icon(
+                  Icons.qr_code_2,
+                  color: Colors.white,
+                  size: 29,
+                ),
+              ),
+              const SizedBox(height: 18),
+              const Text(
+                'Trazabilidad\ndesde la raíz.',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 28,
+                  height: 1.08,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                'Conoce el recorrido de cada producto '
+                'desde su origen.',
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.85),
+                  fontSize: 14,
+                  height: 1.4,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
 
-                final productor = _obtenerProductorDelProducto(lote.productoId);
+  Widget _tarjetaLote(Lote lote) {
+    final producto = _productos[lote.productoId];
+    final productor = _obtenerProductorDelProducto(lote.productoId);
+    final esPropio = _esPropietario(lote);
 
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  child: ListTile(
-                    leading: const CircleAvatar(child: Icon(Icons.qr_code_2)),
-                    title: Text(
-                      lote.codigoLote,
-                      style: const TextStyle(fontWeight: FontWeight.bold),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: esPropio
+              ? colorVerde.withOpacity(0.20)
+              : colorTierra.withOpacity(0.08),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 16,
+            offset: const Offset(0, 7),
+          ),
+        ],
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(24),
+        onTap: () => _abrirDetalle(lote),
+        child: Padding(
+          padding: const EdgeInsets.all(17),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 55,
+                    height: 55,
+                    decoration: BoxDecoration(
+                      color: colorTierra.withOpacity(0.10),
+                      borderRadius: BorderRadius.circular(17),
                     ),
-                    subtitle: Text(
-                      'Producto: '
-                      '${producto?.nombre ?? 'Desconocido'}\n'
-                      'Productor: '
-                      '${productor?.nombre ?? 'Desconocido'} '
-                      '${productor?.apellidos ?? ''}\n'
-                      'Producción: '
-                      '${lote.fechaProduccion}',
-                    ),
-                    isThreeLine: true,
-                    onTap: () {
-                      _abrirDetalle(lote);
-                    },
-                    trailing: IconButton(
-                      icon: const Icon(Icons.delete),
-                      onPressed: () {
-                        _eliminarLote(lote);
-                      },
+                    child: const Icon(
+                      Icons.qr_code_2,
+                      color: colorTierra,
+                      size: 30,
                     ),
                   ),
-                );
-              },
+                  const SizedBox(width: 14),
+
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                'CÓDIGO DEL LOTE',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: colorVerde,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 1.1,
+                                ),
+                              ),
+                            ),
+                            if (esPropio) ...[
+                              const SizedBox(width: 6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 7,
+                                  vertical: 3,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: colorVerde.withOpacity(0.12),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: const Text(
+                                  'MÍO',
+                                  style: TextStyle(
+                                    color: colorVerde,
+                                    fontSize: 8,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          lote.codigoLote,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: colorTexto,
+                            fontSize: 19,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  if (esPropio) ...[
+                    const SizedBox(width: 8),
+                    SizedBox(
+                      width: 40,
+                      height: 40,
+                      child: IconButton(
+                        tooltip: 'Eliminar lote',
+                        padding: EdgeInsets.zero,
+                        onPressed: () => _eliminarLote(lote),
+                        style: IconButton.styleFrom(
+                          backgroundColor: colorBarro.withOpacity(0.10),
+                          foregroundColor: colorBarro,
+                        ),
+                        icon: const Icon(Icons.delete_outline, size: 20),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+
+              const SizedBox(height: 17),
+              const Divider(height: 1),
+              const SizedBox(height: 16),
+
+              _datoVisual(
+                Icons.inventory_2_outlined,
+                'Producto',
+                producto?.nombre ?? 'Desconocido',
+              ),
+
+              const SizedBox(height: 12),
+
+              _datoVisual(
+                Icons.person_outline,
+                'Productor',
+                productor == null
+                    ? 'Desconocido'
+                    : '${productor.nombre} ${productor.apellidos}',
+              ),
+
+              const SizedBox(height: 12),
+
+              _datoVisual(
+                Icons.calendar_today_outlined,
+                'Producción',
+                lote.fechaProduccion,
+              ),
+
+              const SizedBox(height: 17),
+
+              _botonAccion(
+                icono: Icons.arrow_forward_rounded,
+                texto: 'Ver trazabilidad',
+                onTap: () => _abrirDetalle(lote),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _datoVisual(IconData icono, String titulo, String valor) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 34,
+          height: 34,
+          decoration: BoxDecoration(
+            color: colorVerde.withOpacity(0.10),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(icono, size: 18, color: colorVerde),
+        ),
+        const SizedBox(width: 11),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                titulo,
+                style: const TextStyle(
+                  color: Colors.grey,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                valor,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: colorTexto,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _botonAccion({
+    required IconData icono,
+    required String texto,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: colorCrema,
+      borderRadius: BorderRadius.circular(15),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(15),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 12),
+          child: Row(
+            children: [
+              Icon(icono, color: colorTierra, size: 19),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  texto,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: colorTierra,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+              const Icon(Icons.chevron_right, color: colorTierra, size: 21),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _estadoVacio() {
+    final mensaje = _esVisitante
+        ? 'Todavía no hay lotes registrados en RaízMixteca.'
+        : 'Registra tu primer lote para comenzar '
+              'a construir su trazabilidad.';
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(30),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 105,
+              height: 105,
+              decoration: BoxDecoration(
+                color: colorTierra.withOpacity(0.10),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.inventory_2_outlined,
+                size: 50,
+                color: colorTierra,
+              ),
             ),
+            const SizedBox(height: 24),
+            Text(
+              _esVisitante ? 'Aún no hay lotes' : 'Aún no tienes lotes',
+              style: const TextStyle(
+                color: colorTexto,
+                fontSize: 23,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 9),
+            Text(
+              mensaje,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: Colors.grey,
+                height: 1.5,
+                fontSize: 14,
+              ),
+            ),
+            if (_puedeAgregar) ...[
+              const SizedBox(height: 25),
+              FilledButton.icon(
+                onPressed: _mostrarFormulario,
+                style: FilledButton.styleFrom(
+                  backgroundColor: colorTierra,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 22,
+                    vertical: 14,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+                icon: const Icon(Icons.add),
+                label: const Text(
+                  'Registrar primer lote',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
     );
   }
 }
@@ -228,6 +827,13 @@ class _LoteFormPageState extends State<LoteFormPage> {
   int? _productoSeleccionado;
   DateTime? _fechaProduccion;
   String _codigoGenerado = '';
+  bool _guardando = false;
+
+  static const Color colorTierra = Color(0xFF6B4226);
+  static const Color colorBarro = Color(0xFFA85D3A);
+  static const Color colorVerde = Color(0xFF667C4A);
+  static const Color colorCrema = Color(0xFFF7F1E5);
+  static const Color colorTexto = Color(0xFF30251F);
 
   @override
   void initState() {
@@ -270,14 +876,24 @@ class _LoteFormPageState extends State<LoteFormPage> {
   }
 
   Future<void> _guardar() async {
+    if (_guardando) return;
+
     if (!_formKey.currentState!.validate()) {
       return;
     }
 
     if (_fechaProduccion == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Selecciona la fecha de producción.')),
+        const SnackBar(
+          content: Text('Selecciona la fecha de producción.'),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: colorTierra,
+        ),
       );
+      return;
+    }
+
+    if (_productoSeleccionado == null) {
       return;
     }
 
@@ -295,6 +911,10 @@ class _LoteFormPageState extends State<LoteFormPage> {
           : _descripcionController.text.trim(),
     );
 
+    setState(() {
+      _guardando = true;
+    });
+
     try {
       await _repository.insertar(lote);
 
@@ -304,56 +924,102 @@ class _LoteFormPageState extends State<LoteFormPage> {
     } catch (e) {
       if (!mounted) return;
 
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('No se pudo guardar el lote: $e')));
+      setState(() {
+        _guardando = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('No se pudo guardar el lote: $e'),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: colorBarro,
+        ),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Registrar lote')),
+      backgroundColor: colorCrema,
+      appBar: AppBar(
+        backgroundColor: colorCrema,
+        foregroundColor: colorTexto,
+        elevation: 0,
+        title: const Text(
+          'Registrar lote',
+          style: TextStyle(fontWeight: FontWeight.w800),
+        ),
+      ),
       body: Form(
         key: _formKey,
         child: ListView(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.fromLTRB(20, 10, 20, 30),
           children: [
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
-                    const Icon(Icons.qr_code_2, color: Colors.brown),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        _codigoGenerado.isEmpty
-                            ? 'Generando código del lote...'
-                            : 'Código generado: $_codigoGenerado',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
-                      ),
-                    ),
-                  ],
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [colorTierra, colorBarro],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(Icons.qr_code_2, color: Colors.white, size: 34),
+                  const SizedBox(height: 14),
+                  const Text(
+                    'Nuevo lote',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 24,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    _codigoGenerado.isEmpty
+                        ? 'Generando código del lote...'
+                        : 'Código generado: $_codigoGenerado',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.85),
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
               ),
             ),
 
-            const SizedBox(height: 16),
+            const SizedBox(height: 24),
 
             DropdownButtonFormField<int>(
               initialValue: _productoSeleccionado,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Producto',
-                border: OutlineInputBorder(),
+                prefixIcon: const Icon(
+                  Icons.inventory_2_outlined,
+                  color: colorVerde,
+                ),
+                filled: true,
+                fillColor: Colors.white,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(17),
+                  borderSide: BorderSide.none,
+                ),
               ),
               items: widget.productos.map((producto) {
                 return DropdownMenuItem<int>(
                   value: producto.id,
-                  child: Text(producto.nombre),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 240),
+                    child: Text(
+                      producto.nombre,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
                 );
               }).toList(),
               onChanged: (value) {
@@ -373,12 +1039,21 @@ class _LoteFormPageState extends State<LoteFormPage> {
             const SizedBox(height: 16),
 
             InkWell(
+              borderRadius: BorderRadius.circular(17),
               onTap: _seleccionarFecha,
               child: InputDecorator(
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Fecha de producción',
-                  border: OutlineInputBorder(),
-                  suffixIcon: Icon(Icons.calendar_month),
+                  prefixIcon: const Icon(
+                    Icons.calendar_month_outlined,
+                    color: colorVerde,
+                  ),
+                  filled: true,
+                  fillColor: Colors.white,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(17),
+                    borderSide: BorderSide.none,
+                  ),
                 ),
                 child: Text(
                   _fechaProduccion == null
@@ -395,21 +1070,55 @@ class _LoteFormPageState extends State<LoteFormPage> {
             TextFormField(
               controller: _descripcionController,
               maxLines: 4,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Descripción',
-                border: OutlineInputBorder(),
                 alignLabelWithHint: true,
+                prefixIcon: const Padding(
+                  padding: EdgeInsets.only(bottom: 55),
+                  child: Icon(Icons.notes_outlined, color: colorVerde),
+                ),
+                filled: true,
+                fillColor: Colors.white,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(17),
+                  borderSide: BorderSide.none,
+                ),
               ),
             ),
 
-            const SizedBox(height: 24),
+            const SizedBox(height: 25),
 
             SizedBox(
-              height: 55,
+              height: 56,
               child: ElevatedButton.icon(
-                onPressed: _guardar,
-                icon: const Icon(Icons.save),
-                label: const Text('GUARDAR LOTE'),
+                onPressed: _guardando ? null : _guardar,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: colorTierra,
+                  foregroundColor: Colors.white,
+                  disabledBackgroundColor: colorTierra.withOpacity(0.45),
+                  disabledForegroundColor: Colors.white70,
+                  elevation: 3,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(17),
+                  ),
+                ),
+                icon: _guardando
+                    ? const SizedBox(
+                        width: 19,
+                        height: 19,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Icon(Icons.save_outlined),
+                label: Text(
+                  _guardando ? 'GUARDANDO...' : 'GUARDAR LOTE',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.5,
+                  ),
+                ),
               ),
             ),
           ],
@@ -423,72 +1132,178 @@ class LoteDetallePage extends StatelessWidget {
   final Lote lote;
   final Producto? producto;
   final Productor? productor;
+  final bool puedeEditar;
 
   const LoteDetallePage({
     super.key,
     required this.lote,
     required this.producto,
     required this.productor,
+    required this.puedeEditar,
   });
+
+  static const Color colorTierra = Color(0xFF6B4226);
+  static const Color colorBarro = Color(0xFFA85D3A);
+  static const Color colorVerde = Color(0xFF667C4A);
+  static const Color colorDorado = Color(0xFFD5A84B);
+  static const Color colorCrema = Color(0xFFF7F1E5);
+  static const Color colorTexto = Color(0xFF30251F);
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Lote ${lote.codigoLote}')),
+      backgroundColor: colorCrema,
+      appBar: AppBar(
+        backgroundColor: colorCrema,
+        foregroundColor: colorTexto,
+        elevation: 0,
+        title: Text(
+          'Lote ${lote.codigoLote}',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(fontWeight: FontWeight.w800),
+        ),
+      ),
       body: ListView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.fromLTRB(20, 10, 20, 30),
         children: [
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'INFORMACIÓN DEL LOTE',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          Container(
+            padding: const EdgeInsets.all(22),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(colors: [colorTierra, colorBarro]),
+              borderRadius: BorderRadius.circular(26),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 55,
+                  height: 55,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(17),
                   ),
-
-                  const SizedBox(height: 20),
-
-                  _dato('Código de lote', lote.codigoLote),
-
-                  _dato('Producto', producto?.nombre ?? 'Desconocido'),
-
-                  _dato('Tipo', producto?.tipo ?? 'Desconocido'),
-
-                  _dato(
-                    'Productor',
-                    productor == null
-                        ? 'Desconocido'
-                        : '${productor!.nombre} '
-                              '${productor!.apellidos}',
+                  child: const Icon(
+                    Icons.qr_code_2,
+                    color: Colors.white,
+                    size: 31,
                   ),
+                ),
 
-                  _dato('Comunidad', productor?.comunidad ?? 'Desconocida'),
+                const SizedBox(height: 17),
 
-                  _dato('Municipio', productor?.municipio ?? 'Desconocido'),
+                const Text(
+                  'INFORMACIÓN DEL LOTE',
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.2,
+                  ),
+                ),
 
-                  _dato('Fecha de producción', lote.fechaProduccion),
+                const SizedBox(height: 5),
 
-                  if (lote.descripcion != null && lote.descripcion!.isNotEmpty)
-                    _dato('Descripción', lote.descripcion!),
-                ],
-              ),
+                Text(
+                  lote.codigoLote,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 27,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+
+                const SizedBox(height: 10),
+
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.14),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    puedeEditar
+                        ? 'Lote propio · puedes gestionar evidencias'
+                        : 'Información pública',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 18),
+
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(23),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 15,
+                  offset: const Offset(0, 6),
+                ),
+              ],
+            ),
+            child: Column(
+              children: [
+                _dato('Código de lote', lote.codigoLote),
+                _dato('Producto', producto?.nombre ?? 'Desconocido'),
+                _dato('Tipo', producto?.tipo ?? 'Desconocido'),
+                _dato(
+                  'Productor',
+                  productor == null
+                      ? 'Desconocido'
+                      : '${productor!.nombre} ${productor!.apellidos}',
+                ),
+                _dato('Comunidad', productor?.comunidad ?? 'Desconocida'),
+                _dato('Municipio', productor?.municipio ?? 'Desconocido'),
+                _dato('Fecha de producción', lote.fechaProduccion),
+                if (lote.descripcion != null && lote.descripcion!.isNotEmpty)
+                  _dato('Descripción', lote.descripcion!),
+              ],
             ),
           ),
 
           const SizedBox(height: 20),
 
-          Card(
-            child: ListTile(
-              leading: const CircleAvatar(child: Icon(Icons.account_tree)),
-              title: const Text(
-                'Proceso de producción',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              subtitle: const Text('Registrar las etapas del proceso.'),
-              trailing: const Icon(Icons.arrow_forward_ios),
+          const Text(
+            'Explora el lote',
+            style: TextStyle(
+              color: colorTexto,
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+
+          const SizedBox(height: 7),
+
+          Text(
+            puedeEditar
+                ? 'Administra la información y evidencias de tu lote.'
+                : 'Consulta la información pública de trazabilidad.',
+            style: const TextStyle(color: Colors.grey, fontSize: 13),
+          ),
+
+          const SizedBox(height: 14),
+
+          if (puedeEditar) ...[
+            _opcion(
+              context,
+              icono: Icons.account_tree_outlined,
+              titulo: 'Proceso de producción',
+              subtitulo: 'Registrar las etapas del proceso.',
               onTap: () {
                 if (lote.id == null) return;
 
@@ -503,19 +1318,15 @@ class LoteDetallePage extends StatelessWidget {
                 );
               },
             ),
-          ),
+            const SizedBox(height: 12),
+          ],
 
-          const SizedBox(height: 12),
-
-          Card(
-            child: ListTile(
-              leading: const CircleAvatar(child: Icon(Icons.photo_library)),
-              title: const Text(
-                'Fotografías',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              subtitle: const Text('Agregar evidencias fotográficas del lote.'),
-              trailing: const Icon(Icons.arrow_forward_ios),
+          if (puedeEditar) ...[
+            _opcion(
+              context,
+              icono: Icons.photo_library_outlined,
+              titulo: 'Fotografías',
+              subtitulo: 'Agregar evidencias fotográficas.',
               onTap: () {
                 if (lote.id == null) return;
 
@@ -530,26 +1341,20 @@ class LoteDetallePage extends StatelessWidget {
                 );
               },
             ),
-          ),
+            const SizedBox(height: 12),
+          ],
 
-          const SizedBox(height: 12),
-
-          Card(
-            child: ListTile(
-              leading: const CircleAvatar(child: Icon(Icons.qr_code_2)),
-              title: const Text(
-                'Generar QR del lote',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              subtitle: const Text('Muestra y comparte el código QR del lote.'),
-              trailing: const Icon(Icons.arrow_forward_ios),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => QrGenerarPage(lote: lote)),
-                );
-              },
-            ),
+          _opcion(
+            context,
+            icono: Icons.qr_code_2,
+            titulo: 'Generar QR del lote',
+            subtitulo: 'Muestra y comparte el código QR.',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => QrGenerarPage(lote: lote)),
+              );
+            },
           ),
         ],
       ),
@@ -558,14 +1363,131 @@ class LoteDetallePage extends StatelessWidget {
 
   Widget _dato(String titulo, String valor) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
-      child: Column(
+      padding: const EdgeInsets.only(bottom: 17),
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(titulo, style: const TextStyle(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 3),
-          Text(valor),
+          Container(
+            width: 8,
+            height: 8,
+            margin: const EdgeInsets.only(top: 5, right: 12),
+            decoration: const BoxDecoration(
+              color: colorDorado,
+              shape: BoxShape.circle,
+            ),
+          ),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  titulo,
+                  style: const TextStyle(
+                    color: Colors.grey,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  valor,
+                  maxLines: 4,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: colorTexto,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
+      ),
+    );
+  }
+
+  Widget _opcion(
+    BuildContext context, {
+    required IconData icono,
+    required String titulo,
+    required String subtitulo,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(20),
+      elevation: 0,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: colorTierra.withOpacity(0.07)),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 52,
+                height: 52,
+                decoration: BoxDecoration(
+                  color: colorTierra.withOpacity(0.10),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Icon(icono, color: colorTierra, size: 26),
+              ),
+
+              const SizedBox(width: 14),
+
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      titulo,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: colorTexto,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 15,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitulo,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Colors.grey,
+                        fontSize: 12,
+                        height: 1.3,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(width: 8),
+
+              Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  color: colorCrema,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.chevron_right,
+                  color: colorTierra,
+                  size: 21,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
